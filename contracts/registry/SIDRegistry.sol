@@ -101,7 +101,7 @@ contract SIDRegistry is SID {
     /**
      * @dev Enable or disable approval for a third party ("operator") to manage
      *  all of `msg.sender`'s ENS records. Emits the ApprovalForAll event.
-     * @param operator Address to add to the set of authorized operators.
+     * @param operator Address to add to the set of authorized operators        .
      * @param approved True if the operator is approved, false to revoke approval.
      */
     function setApprovalForAll(address operator, bool approved) external virtual override {

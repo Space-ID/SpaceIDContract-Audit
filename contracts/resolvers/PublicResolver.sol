@@ -11,22 +11,30 @@ import "./profiles/NameResolver.sol";
 import "./profiles/PubkeyResolver.sol";
 import "./profiles/TextResolver.sol";
 import "./Multicallable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface INameWrapper {
     function ownerOf(uint256 id) external view returns (address);
 }
 
 /**
- * A simple resolver anyone can use; only allows the owner of a node to set its
- * address.
+ * A more advanced resolver that allows for multiple records of the same domain.
  */
 contract PublicResolver is
     Multicallable,
-    AddrResolver
+    ABIResolver,
+    AddrResolver,
+    ContentHashResolver,
+    DNSResolver,
+    InterfaceResolver,
+    NameResolver,
+    PubkeyResolver,
+    TextResolver,
+    Ownable
 {
     SID immutable sid;
     INameWrapper immutable nameWrapper;
-    address immutable trustedETHController;
+    mapping(address=>bool) trustedControllers;
     address immutable trustedReverseRegistrar;
 
     /**
@@ -52,7 +60,7 @@ contract PublicResolver is
     ) {
         sid = _sid;
         nameWrapper = wrapperAddress;
-        trustedETHController = _trustedETHController;
+        trustedControllers[_trustedETHController] = true;
         trustedReverseRegistrar = _trustedReverseRegistrar;
     }
 
@@ -82,7 +90,7 @@ contract PublicResolver is
 
     function isAuthorised(bytes32 node) internal view override returns (bool) {
         if (
-            msg.sender == trustedETHController ||
+            trustedControllers[msg.sender] ||
             msg.sender == trustedReverseRegistrar
         ) {
             return true;
@@ -99,10 +107,24 @@ contract PublicResolver is
         pure
         override(
             Multicallable,
-            AddrResolver
+            ABIResolver,
+            AddrResolver,
+            ContentHashResolver,
+            DNSResolver,
+            InterfaceResolver,
+            NameResolver,
+            PubkeyResolver,
+            TextResolver
         )
         returns (bool)
     {
         return super.supportsInterface(interfaceID);
+    }
+
+    function setNewTrustedController(address newController) external onlyOwner {
+        trustedControllers[newController] = true;
+    }
+    function removeTrustedController(address controller) external onlyOwner {
+        trustedControllers[controller] = false;
     }
 }
